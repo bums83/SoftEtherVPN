@@ -11,6 +11,7 @@
 #include "CedarType.h"
 
 #include "Mayaqua/Encrypt.h"
+#include "AuthTotp.h"
 
 #define	USER_MAC_STR_PREFIX		L"MAC:"
 #define	USER_IPV4_STR_PREFIX		L"IPv4:"
@@ -114,6 +115,8 @@ struct AUTHPASSWORD
 {
 	UCHAR HashedKey[SHA1_SIZE];		// Hashed passwords
 	UCHAR NtLmSecureHash[MD5_SIZE];	// Encrypted password for the NTLM
+	char TotpSecret[TOTP_SECRET_SIZE];	// Base32-encoded TOTP secret
+	bool TotpEnabled;				// Whether TOTP is enabled for this user
 };
 
 // User certificate authentication data

@@ -575,6 +575,8 @@ CLIENT_AUTH *CopyClientAuth(CLIENT_AUTH *a)
 		break;
 	}
 
+	StrCpy(ret->TotpCode, sizeof(ret->TotpCode), a->TotpCode);
+
 	return ret;
 }
 

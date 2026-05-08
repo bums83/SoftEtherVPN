@@ -2347,6 +2347,7 @@ STATIC12				User &Authentication Setting:
 STATIC13				Auth &Type:
 S_USERNAME				&User Name:
 S_PASSWORD				Password:
+S_TOTP					TOTP Code:
 S_CERT_INFO				You must specify a client certificate to be used for user authentication.
 STATIC14				Advanc&ed Setting of Communication: 
 R_RETRY					Reconnects Automatically After Disconnected

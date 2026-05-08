@@ -12,6 +12,7 @@
 
 #include "CMInner.h"
 
+#include "AuthTotp.h"
 #include "Nat.h"
 #include "Protocol.h"
 #include "Remote.h"
@@ -6810,6 +6811,10 @@ void CmEditAccountDlgUpdate(HWND hWnd, CM_ACCOUNT *a)
 		break;
 	}
 
+	// TOTP code
+	GetTxtA(hWnd, E_TOTP, a->ClientAuth->TotpCode, sizeof(a->ClientAuth->TotpCode));
+	Trim(a->ClientAuth->TotpCode);
+
 	// Reconnection option
 	if ((a->LinkMode || a->NatMode) || a->ClientAuth->AuthType == CLIENT_AUTHTYPE_SECURE)
 	{
@@ -6948,6 +6953,8 @@ void CmEditAccountDlgUpdate(HWND hWnd, CM_ACCOUNT *a)
 
 		Hide(hWnd, S_PASSWORD);
 		Hide(hWnd, E_PASSWORD);
+		Hide(hWnd, S_TOTP);
+		Hide(hWnd, E_TOTP);
 		if (a->ClientAuth->AuthType == CLIENT_AUTHTYPE_CERT)
 		{
 			if (a->ClientAuth->ClientX != NULL)
@@ -7006,11 +7013,15 @@ void CmEditAccountDlgUpdate(HWND hWnd, CM_ACCOUNT *a)
 		{
 			Hide(hWnd, S_PASSWORD);
 			Hide(hWnd, E_PASSWORD);
+			Hide(hWnd, S_TOTP);
+			Hide(hWnd, E_TOTP);
 		}
 		else
 		{
 			Show(hWnd, S_PASSWORD);
 			Show(hWnd, E_PASSWORD);
+			Show(hWnd, S_TOTP);
+			Show(hWnd, E_TOTP);
 		}
 		Hide(hWnd, S_CERT);
 		Hide(hWnd, S_CERT_INFO);
@@ -7282,6 +7293,11 @@ void CmEditAccountDlgInit(HWND hWnd, CM_ACCOUNT *a)
 		SetTextA(hWnd, E_PASSWORD, HIDDEN_PASSWORD);
 	}
 
+	// TOTP code (always cleared for each connection attempt)
+	Zero(a->ClientAuth->TotpCode, sizeof(a->ClientAuth->TotpCode));
+	SetTextA(hWnd, E_TOTP, "");
+	LimitText(hWnd, E_TOTP, 6);
+
 	// Reconnection times
 	if (a->ClientOption->NumRetry == 0)
 	{
@@ -7447,6 +7463,7 @@ UINT CmEditAccountDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, voi
 		case C_TYPE:
 		case E_USERNAME:
 		case E_PASSWORD:
+		case E_TOTP:
 		case R_RETRY:
 		case E_RETRY_NUM:
 		case E_RETRY_SPAN:

@@ -8,6 +8,7 @@
 #include "Sam.h"
 
 #include "Account.h"
+#include "AuthTotp.h"
 #include "Cedar.h"
 #include "Connection.h"
 #include "Hub.h"
@@ -929,7 +930,7 @@ POLICY *SamGetUserPolicy(HUB *h, char *username)
 }
 
 // Password authentication of user
-bool SamAuthUserByPassword(HUB *h, char *username, void *random, void *secure_password, char *mschap_v2_password, UCHAR *mschap_v2_server_response_20, UINT *err)
+bool SamAuthUserByPassword(HUB *h, char *username, void *random, void *secure_password, char *mschap_v2_password, UCHAR *mschap_v2_server_response_20, UINT *err, const char *totp_code)
 {
 	bool b = false;
 	UCHAR secure_password_check[SHA1_SIZE];
@@ -978,46 +979,69 @@ bool SamAuthUserByPassword(HUB *h, char *username, void *random, void *secure_pa
 				{
 					AUTHPASSWORD *auth = (AUTHPASSWORD *)u->AuthData;
 
-					if (is_mschap == false)
+					// TOTP verification (if enabled)
+					if (auth->TotpEnabled && StrLen(auth->TotpSecret) > 0)
 					{
-						// Normal password authentication
-						SecurePassword(secure_password_check, auth->HashedKey, random);
-						if (Cmp(secure_password_check, secure_password, SHA1_SIZE) == 0)
+						if (totp_code == NULL || StrLen(totp_code) == 0)
 						{
-							b = true;
+							// TOTP required but not provided
+							b = false;
+						}
+						else if (TotpVerifyCode(auth->TotpSecret, totp_code, 0) == false)
+						{
+							// TOTP code mismatch
+							b = false;
+						}
+						else
+						{
+							// TOTP verified, proceed to password check
+							goto password_check;
 						}
 					}
 					else
 					{
-						// MS-CHAP v2 authentication via PPP
-						UCHAR challenge8[8];
-						UCHAR client_response[24];
-
-						if (IsZero(auth->NtLmSecureHash, MD5_SIZE))
+password_check:
+						if (is_mschap == false)
 						{
-							// NTLM hash is not registered in the user account
-							*err = ERR_MSCHAP2_PASSWORD_NEED_RESET;
+							// Normal password authentication
+							SecurePassword(secure_password_check, auth->HashedKey, random);
+							if (Cmp(secure_password_check, secure_password, SHA1_SIZE) == 0)
+							{
+								b = true;
+							}
 						}
 						else
 						{
-							UCHAR nt_pw_hash_hash[16];
-							Zero(challenge8, sizeof(challenge8));
-							Zero(client_response, sizeof(client_response));
+							// MS-CHAP v2 authentication via PPP
+							UCHAR challenge8[8];
+							UCHAR client_response[24];
 
-							MsChapV2_GenerateChallenge8(challenge8, mschap.MsChapV2_ClientChallenge, mschap.MsChapV2_ServerChallenge,
-								mschap.MsChapV2_PPPUsername);
-
-							MsChapV2Client_GenerateResponse(client_response, challenge8, auth->NtLmSecureHash);
-
-							if (Cmp(client_response, mschap.MsChapV2_ClientResponse, 24) == 0)
+							if (IsZero(auth->NtLmSecureHash, MD5_SIZE))
 							{
-								// Hash matched
-								b = true;
+								// NTLM hash is not registered in the user account
+								*err = ERR_MSCHAP2_PASSWORD_NEED_RESET;
+							}
+							else
+							{
+								UCHAR nt_pw_hash_hash[16];
+								Zero(challenge8, sizeof(challenge8));
+								Zero(client_response, sizeof(client_response));
 
-								// Calculate the response
-								GenerateNtPasswordHashHash(nt_pw_hash_hash, auth->NtLmSecureHash);
-								MsChapV2Server_GenerateResponse(mschap_v2_server_response_20, nt_pw_hash_hash,
-									client_response, challenge8);
+								MsChapV2_GenerateChallenge8(challenge8, mschap.MsChapV2_ClientChallenge, mschap.MsChapV2_ServerChallenge,
+									mschap.MsChapV2_PPPUsername);
+
+								MsChapV2Client_GenerateResponse(client_response, challenge8, auth->NtLmSecureHash);
+
+								if (Cmp(client_response, mschap.MsChapV2_ClientResponse, 24) == 0)
+								{
+									// Hash matched
+									b = true;
+
+									// Calculate the response
+									GenerateNtPasswordHashHash(nt_pw_hash_hash, auth->NtLmSecureHash);
+									MsChapV2Server_GenerateResponse(mschap_v2_server_response_20, nt_pw_hash_hash,
+										client_response, challenge8);
+								}
 							}
 						}
 					}

@@ -8,6 +8,7 @@
 #include "Cedar.h"
 
 #include "Admin.h"
+#include "AuthTotp.h"
 #include "Bridge.h"
 #include "Connection.h"
 #include "Layer3.h"

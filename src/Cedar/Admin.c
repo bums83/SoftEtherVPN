@@ -14059,6 +14059,8 @@ void *InRpcAuthData(PACK *p, UINT *authtype, char *username)
 		pw = ZeroMalloc(sizeof(AUTHPASSWORD));
 		PackGetData2(p, "HashedKey", pw->HashedKey, sizeof(pw->HashedKey));
 		PackGetData2(p, "NtLmSecureHash", pw->NtLmSecureHash, sizeof(pw->NtLmSecureHash));
+		PackGetStr(p, "TotpSecret", pw->TotpSecret, sizeof(pw->TotpSecret));
+		pw->TotpEnabled = PackGetBool(p, "TotpEnabled");
 
 		if (PackGetStr(p, "Auth_Password", plain_pw, sizeof(plain_pw)))
 		{
@@ -14136,6 +14138,8 @@ void OutRpcAuthData(PACK *p, void *authdata, UINT authtype)
 	case AUTHTYPE_PASSWORD:
 		PackAddData(p, "HashedKey", pw->HashedKey, sizeof(pw->HashedKey));
 		PackAddData(p, "NtLmSecureHash", pw->NtLmSecureHash, sizeof(pw->NtLmSecureHash));
+		PackAddStr(p, "TotpSecret", pw->TotpSecret);
+		PackAddBool(p, "TotpEnabled", pw->TotpEnabled);
 		break;
 
 	case AUTHTYPE_USERCERT:

@@ -8,6 +8,7 @@
 #include "Command.h"
 
 #include "Admin.h"
+#include "AuthTotp.h"
 #include "AzureClient.h"
 #include "Connection.h"
 #include "Console.h"
@@ -7679,6 +7680,9 @@ void PsMain(PS *ps)
 			{"UserGet", PsUserGet},
 			{"UserAnonymousSet", PsUserAnonymousSet},
 			{"UserPasswordSet", PsUserPasswordSet},
+			{"UserTotpSet", PsUserTotpSet},
+			{"UserTotpRemove", PsUserTotpRemove},
+			{"UserTotpGet", PsUserTotpGet},
 			{"UserCertSet", PsUserCertSet},
 			{"UserCertGet", PsUserCertGet},
 			{"UserSignedSet", PsUserSignedSet},
@@ -17486,6 +17490,255 @@ UINT PsUserPasswordSet(CONSOLE *c, char *cmd_name, wchar_t *str, void *param)
 
 	FreeRpcSetUser(&t);
 
+	FreeParamValueList(o);
+
+	return 0;
+}
+
+// Enable TOTP two-factor authentication for a user
+UINT PsUserTotpSet(CONSOLE *c, char *cmd_name, wchar_t *str, void *param)
+{
+	LIST *o;
+	PS *ps = (PS *)param;
+	UINT ret = 0;
+	RPC_SET_USER t;
+	AUTHPASSWORD *pw;
+	char secret[TOTP_SECRET_SIZE];
+	wchar_t totp_uri[512];
+	wchar_t username_w[MAX_SIZE];
+	wchar_t secret_w[MAX_SIZE];
+	wchar_t tmp[MAX_SIZE];
+	// Parameter list that can be specified
+	PARAM args[] =
+	{
+		{"[name]", CmdPrompt, _UU("CMD_UserCreate_Prompt_NAME"), CmdEvalNotEmpty, NULL},
+	};
+
+	// If virtual HUB is not selected, it's an error
+	if (ps->HubName == NULL)
+	{
+		c->Write(c, _UU("CMD_Hub_Not_Selected"));
+		return ERR_INVALID_PARAMETER;
+	}
+
+	o = ParseCommandList(c, cmd_name, str, args, sizeof(args) / sizeof(args[0]));
+	if (o == NULL)
+	{
+		return ERR_INVALID_PARAMETER;
+	}
+
+	// Generate a random TOTP secret
+	TotpGenerateSecret(secret, sizeof(secret));
+
+	Zero(&t, sizeof(t));
+	// Get the user object
+	StrCpy(t.HubName, sizeof(t.HubName), ps->HubName);
+	StrCpy(t.Name, sizeof(t.Name), GetParamStr(o, "[name]"));
+
+	ret = ScGetUser(ps->Rpc, &t);
+	if (ret != ERR_NO_ERROR)
+	{
+		// An error has occured
+		CmdPrintError(c, ret);
+		FreeParamValueList(o);
+		return ret;
+	}
+
+	if (t.AuthType != AUTHTYPE_PASSWORD)
+	{
+		c->Write(c, L"Error: TOTP is only available for password-authenticated users.\n");
+		FreeRpcSetUser(&t);
+		FreeParamValueList(o);
+		return ERR_NOT_SUPPORTED;
+	}
+
+	// Update the TOTP settings
+	pw = (AUTHPASSWORD *)t.AuthData;
+	StrCpy(pw->TotpSecret, sizeof(pw->TotpSecret), secret);
+	pw->TotpEnabled = true;
+
+	// Write the user object
+	ret = ScSetUser(ps->Rpc, &t);
+
+	if (ret != ERR_NO_ERROR)
+	{
+		// An error has occured
+		CmdPrintError(c, ret);
+		FreeRpcSetUser(&t);
+		FreeParamValueList(o);
+		return ret;
+	}
+
+	// Generate the TOTP URI and display
+	TotpGenerateUri(totp_uri, sizeof(totp_uri), secret, "SoftEther VPN", t.Name);
+	StrToUni(username_w, sizeof(username_w), t.Name);
+	StrToUni(secret_w, sizeof(secret_w), secret);
+
+	UniFormat(tmp, sizeof(tmp), L"TOTP has been enabled for user \"%S\".\n\n", username_w);
+	c->Write(c, tmp);
+	c->Write(c, L"Scan the following URI with your authenticator app:\n\n");
+	c->Write(c, totp_uri);
+	UniFormat(tmp, sizeof(tmp), L"\n\nOr manually enter this secret: %S\n", secret_w);
+	c->Write(c, tmp);
+
+	FreeRpcSetUser(&t);
+	FreeParamValueList(o);
+
+	return 0;
+}
+
+// Disable TOTP for a user
+UINT PsUserTotpRemove(CONSOLE *c, char *cmd_name, wchar_t *str, void *param)
+{
+	LIST *o;
+	PS *ps = (PS *)param;
+	UINT ret = 0;
+	RPC_SET_USER t;
+	AUTHPASSWORD *pw;
+	wchar_t username_w[MAX_SIZE];
+	wchar_t tmp[MAX_SIZE];
+	// Parameter list that can be specified
+	PARAM args[] =
+	{
+		{"[name]", CmdPrompt, _UU("CMD_UserCreate_Prompt_NAME"), CmdEvalNotEmpty, NULL},
+	};
+
+	// If virtual HUB is not selected, it's an error
+	if (ps->HubName == NULL)
+	{
+		c->Write(c, _UU("CMD_Hub_Not_Selected"));
+		return ERR_INVALID_PARAMETER;
+	}
+
+	o = ParseCommandList(c, cmd_name, str, args, sizeof(args) / sizeof(args[0]));
+	if (o == NULL)
+	{
+		return ERR_INVALID_PARAMETER;
+	}
+
+	Zero(&t, sizeof(t));
+	// Get the user object
+	StrCpy(t.HubName, sizeof(t.HubName), ps->HubName);
+	StrCpy(t.Name, sizeof(t.Name), GetParamStr(o, "[name]"));
+
+	ret = ScGetUser(ps->Rpc, &t);
+	if (ret != ERR_NO_ERROR)
+	{
+		// An error has occured
+		CmdPrintError(c, ret);
+		FreeParamValueList(o);
+		return ret;
+	}
+
+	if (t.AuthType != AUTHTYPE_PASSWORD)
+	{
+		c->Write(c, L"Error: User does not use password authentication.\n");
+		FreeRpcSetUser(&t);
+		FreeParamValueList(o);
+		return ERR_NOT_SUPPORTED;
+	}
+
+	// Disable TOTP
+	pw = (AUTHPASSWORD *)t.AuthData;
+	Zero(pw->TotpSecret, sizeof(pw->TotpSecret));
+	pw->TotpEnabled = false;
+
+	// Write the user object
+	ret = ScSetUser(ps->Rpc, &t);
+
+	if (ret != ERR_NO_ERROR)
+	{
+		// An error has occured
+		CmdPrintError(c, ret);
+		FreeRpcSetUser(&t);
+		FreeParamValueList(o);
+		return ret;
+	}
+
+	StrToUni(username_w, sizeof(username_w), t.Name);
+	UniFormat(tmp, sizeof(tmp), L"TOTP has been disabled for user \"%S\".\n", username_w);
+	c->Write(c, tmp);
+
+	FreeRpcSetUser(&t);
+	FreeParamValueList(o);
+
+	return 0;
+}
+
+// Show TOTP status for a user
+UINT PsUserTotpGet(CONSOLE *c, char *cmd_name, wchar_t *str, void *param)
+{
+	LIST *o;
+	PS *ps = (PS *)param;
+	UINT ret = 0;
+	RPC_SET_USER t;
+	AUTHPASSWORD *pw;
+	wchar_t username_w[MAX_SIZE];
+	wchar_t secret_w[MAX_SIZE];
+	wchar_t tmp[MAX_SIZE];
+	// Parameter list that can be specified
+	PARAM args[] =
+	{
+		{"[name]", CmdPrompt, _UU("CMD_UserCreate_Prompt_NAME"), CmdEvalNotEmpty, NULL},
+	};
+
+	// If virtual HUB is not selected, it's an error
+	if (ps->HubName == NULL)
+	{
+		c->Write(c, _UU("CMD_Hub_Not_Selected"));
+		return ERR_INVALID_PARAMETER;
+	}
+
+	o = ParseCommandList(c, cmd_name, str, args, sizeof(args) / sizeof(args[0]));
+	if (o == NULL)
+	{
+		return ERR_INVALID_PARAMETER;
+	}
+
+	Zero(&t, sizeof(t));
+	// Get the user object
+	StrCpy(t.HubName, sizeof(t.HubName), ps->HubName);
+	StrCpy(t.Name, sizeof(t.Name), GetParamStr(o, "[name]"));
+
+	ret = ScGetUser(ps->Rpc, &t);
+	if (ret != ERR_NO_ERROR)
+	{
+		// An error has occured
+		CmdPrintError(c, ret);
+		FreeParamValueList(o);
+		return ret;
+	}
+
+	if (t.AuthType != AUTHTYPE_PASSWORD)
+	{
+		StrToUni(username_w, sizeof(username_w), t.Name);
+		UniFormat(tmp, sizeof(tmp), L"User \"%S\" does not use password authentication.\n", username_w);
+		c->Write(c, tmp);
+		FreeRpcSetUser(&t);
+		FreeParamValueList(o);
+		return 0;
+	}
+
+	// Check TOTP status
+	pw = (AUTHPASSWORD *)t.AuthData;
+	StrToUni(username_w, sizeof(username_w), t.Name);
+
+	if (pw->TotpEnabled && StrLen(pw->TotpSecret) > 0)
+	{
+		StrToUni(secret_w, sizeof(secret_w), pw->TotpSecret);
+
+		UniFormat(tmp, sizeof(tmp), L"TOTP is ENABLED for user \"%S\".\n", username_w);
+		c->Write(c, tmp);
+		UniFormat(tmp, sizeof(tmp), L"Secret: %S\n", secret_w);
+		c->Write(c, tmp);
+	}
+	else
+	{
+		UniFormat(tmp, sizeof(tmp), L"TOTP is DISABLED for user \"%S\".\n", username_w);
+		c->Write(c, tmp);
+	}
+
+	FreeRpcSetUser(&t);
 	FreeParamValueList(o);
 
 	return 0;

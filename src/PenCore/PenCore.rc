@@ -13,7 +13,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// §È§ÅEresources
+// ÔøΩÈ§ÅEresources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_JPN)
 #ifdef _WIN32
@@ -1505,7 +1505,7 @@ BEGIN
     EDITTEXT        S_DESCRIPTION,7,191,289,45,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | ES_WANTRETURN | WS_VSCROLL
 END
 
-D_CM_ACCOUNT DIALOGEX 0, 0, 451, 346
+D_CM_ACCOUNT DIALOGEX 0, 0, 451, 360
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "@D_CM_ACCOUNT"
 FONT 9, "MS Shell Dlg", 400, 0, 0x80
@@ -1560,23 +1560,25 @@ BEGIN
     ICON            ICO_CERT,S_CERT,248,158,20,18
     LTEXT           "@S_CERT_INFO",S_CERT_INFO,272,160,160,24
     EDITTEXT        E_PASSWORD,289,160,126,11,ES_PASSWORD | ES_AUTOHSCROLL | NOT WS_VISIBLE
-    CTEXT           "@S_CHANGE_PASSWORD",S_CHANGE_PASSWORD,244,173,187,10
-    PUSHBUTTON      "VIEW_CLIENT_CERT",B_VIEW_CLIENT_CERT,246,184,90,15
-    PUSHBUTTON      "@B_REGIST_CLIENT_CERT",B_REGIST_CLIENT_CERT,341,184,90,15
-    PUSHBUTTON      "@B_CHANGE_PASSWORD",B_CHANGE_PASSWORD,341,184,90,15
-    GROUPBOX        "@STATIC14",IDC_STATIC,223,212,221,86
-    ICON            ICO_MACHINE,IDC_STATIC,230,224,20,18
-    CONTROL         "@R_RETRY",R_RETRY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,253,225,184,9
-    RTEXT           "@S_RETRY_NUM_1",S_RETRY_NUM_1,253,239,61,9
-    EDITTEXT        E_RETRY_NUM,318,237,41,11,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "@S_RETRY_NUM_2",S_RETRY_NUM_2,364,239,73,8
-    RTEXT           "@S_RETRY_SPAN_1",S_RETRY_SPAN_1,228,252,86,9
-    EDITTEXT        E_RETRY_SPAN,318,251,41,11,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "@S_RETRY_SPAN_2",S_RETRY_SPAN_2,364,252,72,9
-    CONTROL         "@R_INFINITE",R_INFINITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,266,265,171,9
-    PUSHBUTTON      "@B_DETAIL",B_DETAIL,344,277,87,15
-    DEFPUSHBUTTON   "@IDOK",IDOK,308,310,64,17
-    PUSHBUTTON      "@IDCANCEL",IDCANCEL,380,310,64,17
+    RTEXT           "@S_TOTP",S_TOTP,230,176,54,9,NOT WS_VISIBLE
+    EDITTEXT        E_TOTP,289,174,50,11,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_VISIBLE
+    CTEXT           "@S_CHANGE_PASSWORD",S_CHANGE_PASSWORD,244,188,187,10
+    PUSHBUTTON      "VIEW_CLIENT_CERT",B_VIEW_CLIENT_CERT,246,199,90,15
+    PUSHBUTTON      "@B_REGIST_CLIENT_CERT",B_REGIST_CLIENT_CERT,341,199,90,15
+    PUSHBUTTON      "@B_CHANGE_PASSWORD",B_CHANGE_PASSWORD,341,199,90,15
+    GROUPBOX        "@STATIC14",IDC_STATIC,223,227,221,86
+    ICON            ICO_MACHINE,IDC_STATIC,230,239,20,18
+    CONTROL         "@R_RETRY",R_RETRY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,253,240,184,9
+    RTEXT           "@S_RETRY_NUM_1",S_RETRY_NUM_1,253,254,61,9
+    EDITTEXT        E_RETRY_NUM,318,252,41,11,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "@S_RETRY_NUM_2",S_RETRY_NUM_2,364,254,73,8
+    RTEXT           "@S_RETRY_SPAN_1",S_RETRY_SPAN_1,228,267,86,9
+    EDITTEXT        E_RETRY_SPAN,318,266,41,11,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "@S_RETRY_SPAN_2",S_RETRY_SPAN_2,364,267,72,9
+    CONTROL         "@R_INFINITE",R_INFINITE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,266,280,171,9
+    PUSHBUTTON      "@B_DETAIL",B_DETAIL,344,292,87,15
+    DEFPUSHBUTTON   "@IDOK",IDOK,308,325,64,17
+    PUSHBUTTON      "@IDCANCEL",IDCANCEL,380,325,64,17
     CONTROL         178,S_ROUTER_LOGO,"Static",SS_BITMAP | NOT WS_VISIBLE,358,5,86,89
 END
 
@@ -4869,12 +4871,12 @@ END
 //
 
 BIN_WINPCAP             BIN                     "Dummy.bin"
-#endif    // §È§ÅEresources
+#endif    // ÔøΩÈ§ÅEresources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// §§§ÅE(•x∆W) resources
+// ÔøΩÔøΩÔøΩÔøΩE(ÔøΩxÔøΩW) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHT)
 #ifdef _WIN32
@@ -4890,12 +4892,12 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 ICO_LANG_TRADITIONAL_CHINESE ICON                    "LANG_TRADITIONAL_CHINESE.ico"
-#endif    // §§§ÅE(•x∆W) resources
+#endif    // ÔøΩÔøΩÔøΩÔøΩE(ÔøΩxÔøΩW) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// ≠^§ÅE(¨ÅEÅE resources
+// ÔøΩ^ÔøΩÔøΩE(ÔøΩÔøΩEÔøΩE resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
@@ -4956,7 +4958,7 @@ BMP_ZURUKKO             BITMAP                  "Zurukko.bmp"
 BMP_VPNGATEEN           BITMAP                  "VPNGateEN.bmp"
 BMP_VPNGATEJA           BITMAP                  "VPNGateJA.bmp"
 BMP_UNIVTSUKUBA         BITMAP                  "UnivTsukuba.bmp"
-#endif    // ≠^§ÅE(¨ÅEÅE resources
+#endif    // ÔøΩ^ÔøΩÔøΩE(ÔøΩÔøΩEÔøΩE resources
 /////////////////////////////////////////////////////////////////////////////
 
 

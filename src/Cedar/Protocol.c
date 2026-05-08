@@ -8,6 +8,7 @@
 #include "Protocol.h"
 
 #include "Admin.h"
+#include "AuthTotp.h"
 #include "Client.h"
 #include "CM.h"
 #include "DDNS.h"
@@ -1854,12 +1855,15 @@ bool ServerAccept(CONNECTION *c)
 					{
 						POLICY *pol = NULL;
 						UCHAR secure_password[SHA1_SIZE];
+						char totp_code[TOTP_CODE_SIZE];
 						Zero(secure_password, sizeof(secure_password));
+						Zero(totp_code, sizeof(totp_code));
 						if (PackGetDataSize(p, "secure_password") == SHA1_SIZE)
 						{
 							PackGetData(p, "secure_password", secure_password);
 						}
-						auth_ret = SamAuthUserByPassword(hub, username, c->Random, secure_password, NULL, NULL, NULL);
+						PackGetStr(p, "totp_code", totp_code, sizeof(totp_code));
+						auth_ret = SamAuthUserByPassword(hub, username, c->Random, secure_password, NULL, NULL, NULL, totp_code);
 
 						pol = SamGetUserPolicy(hub, username);
 						if (pol != NULL)
@@ -1906,12 +1910,12 @@ bool ServerAccept(CONNECTION *c)
 
 							if (is_mschap == false)
 							{
-								auth_ret = SamAuthUserByPassword(hub, username, c->Random, secure_password, NULL, NULL, NULL);
+								auth_ret = SamAuthUserByPassword(hub, username, c->Random, secure_password, NULL, NULL, NULL, NULL);
 							}
 							else
 							{
 								auth_ret = SamAuthUserByPassword(hub, username, c->Random, secure_password,
-									plain_password, mschap_v2_server_response_20, &ms_chap_error);
+									plain_password, mschap_v2_server_response_20, &ms_chap_error, NULL);
 							}
 
 							if (auth_ret && pol == NULL)
@@ -5508,7 +5512,8 @@ bool ClientUploadAuth(CONNECTION *c)
 		case CLIENT_AUTHTYPE_PASSWORD:
 			// Password authentication
 			SecurePassword(secure_password, a->HashedPassword, c->Random);
-			p = PackLoginWithPassword(o->HubName, a->Username, secure_password);
+			p = PackLoginWithPassword(o->HubName, a->Username, secure_password,
+				StrLen(a->TotpCode) > 0 ? a->TotpCode : NULL);
 			break;
 
 		case CLIENT_AUTHTYPE_PLAIN_PASSWORD:
@@ -6831,7 +6836,7 @@ PACK *PackLoginWithOpenVPNCertificate(char *hubname, char *username, X *x)
 }
 
 // Create a packet of password authentication login
-PACK *PackLoginWithPassword(char *hubname, char *username, void *secure_password)
+PACK *PackLoginWithPassword(char *hubname, char *username, void *secure_password, const char *totp_code)
 {
 	PACK *p;
 	// Validate arguments
@@ -6846,6 +6851,10 @@ PACK *PackLoginWithPassword(char *hubname, char *username, void *secure_password
 	PackAddStr(p, "username", username);
 	PackAddInt(p, "authtype", CLIENT_AUTHTYPE_PASSWORD);
 	PackAddData(p, "secure_password", secure_password, SHA1_SIZE);
+	if (totp_code != NULL && StrLen(totp_code) > 0)
+	{
+		PackAddStr(p, "totp_code", totp_code);
+	}
 
 	return p;
 }
